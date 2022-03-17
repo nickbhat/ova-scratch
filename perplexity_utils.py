@@ -24,11 +24,7 @@ def compute_pl_logits(seq_tokens, model, mask_idx, padding_idx, start, end, mask
         results = model(inp)
     
     # Filter logits down to subsequence
-    out = results["logits"][:, (start+1):(end+1), :]
-    
-    # Extract only diagonal
-    logits = torch.diagonal(out, dim1=0, dim2=1)
-    return logits.transpose(0, 1)
+    return results
 
 
 def compute_scores(seq_tokens, logits):

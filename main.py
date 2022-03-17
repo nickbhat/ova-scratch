@@ -4,6 +4,8 @@ import json
 
 import esm
 from fairseq.models.roberta import RobertaModel
+import torch
+from tqdm import tqdm
 
 from perplexity_utils import (
     compute_boundaries,
@@ -25,6 +27,7 @@ def roberta_tokenize(seq, model):
     s_ = f"<s> {s} </s>"
     seq_tokens = model.task.source_dictionary.encode_line(
         s_, append_eos=False, add_if_not_exist=False
+    )
     return seq_tokens
 
 
@@ -66,10 +69,9 @@ if __name__ == "__main__":
 
     use_hc = True
     results = {}
-    batch_converter = alphabet.get_batch_converter()
     for region in ["fr1", "cdr1", "fr2", "cdr2", "fr3", "cdr3", "fr4"]:
         scores = []
-        for seq, aho in examples:
+        for seq, aho in tqdm(examples):
             # Encode sequence to tokens
             if use_esm:
                 seq_tokens = esm_tokenize(seq, alphabet)
@@ -84,13 +86,21 @@ if __name__ == "__main__":
             
             # Compute pseudolikelihood
             start, end = compute_boundaries(aho, region, hc=use_hc)
-            logits = compute_pl_logits(seq_tokens, alphabet, model, start, end, mask_outside=args.mask_outside)
+            out = compute_pl_logits(seq_tokens.unsqueeze(0), _model, mask_idx, padding_idx, start, end, mask_outside=args.mask_outside)
+            if use_esm:
+                out = out["logits"][:, (start+1):(end+1), :]
+            else:
+                out = out[0][:, (start+1):(end+1), :]
+            logits = torch.diagonal(out, dim1=0, dim2=1).transpose(0,1)
             s_ = compute_scores(seq_tokens[(start+1):(end+1)], logits)
             scores.extend(s_)
             pppl = compute_pseudo_ppl(scores)
             results[region] = pppl
 
     out_mask = "mask_outside" if args.mask_outside else "no_mask_outside"
-    save_path = f"pppl_results/{args.model}-{out_mask}"
+    save_dir = Path("pppl-results")
+    if not save_dir.exists():
+        save_dir.mkdir()
+    save_path = save_dir / Path(f"{args.model}-{out_mask}")
     with open(save_path, "w") as f:
         json.dump(results, f)
