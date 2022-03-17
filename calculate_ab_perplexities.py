@@ -1,6 +1,6 @@
 import argparse
-import copy
 import json
+from pathlib import Path
 
 import esm
 from fairseq.models.roberta import RobertaModel
@@ -36,11 +36,10 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--mask_outside", type=str, required=True)
     parser.add_argument("--mask_inside", type=str, required=True)
+    parser.add_argument("--data_path", type=str, default="030922-joint-OVA-data-Golden-EpGrp-Jac.json")
     args = parser.parse_args()
 
-    data_path = "030922-joint-OVA-data-Golden-EpGrp-Jac.json"
-
-    with open(data_path, "r") as f:
+    with open(args.data_path, "r") as f:
         data = json.load(f)
 
     examples = [(d["HC"], d["HC_AHo"]) for d in data]
