@@ -88,6 +88,7 @@ def compute_boundaries(aho, region, hc=True):
 
 if __name__ == "__main__":
     import argparse
+    from tqdm import tqdm
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, required=True)
@@ -112,7 +113,7 @@ if __name__ == "__main__":
     results = {}
     for region in ["fr1", "cdr1", "fr2", "cdr2", "fr3", "cdr3", "fr4"]:
         scores = []
-        for seq, aho in examples:
+        for seq, aho in tqdm(examples):
             start, end = compute_boundaries(aho, region, hc=use_hc)
             logits = compute_pl_logits(seq, alphabet, model, start, end, mask_outside=args.mask_outside)
             s_ = compute_scores(seq[start:end], alphabet, logits)
@@ -121,6 +122,6 @@ if __name__ == "__main__":
         results[region] = pppl
     
     out_mask = "mask_outside" if args.mask_outside else "no_mask_outside"
-    save_path = f"pppl_results/{args.model}-{out_mask}"
+    save_path = f"pppl-results/{args.model}-{out_mask}.json"
     with open(save_path, "w") as f:
         json.dump(results, f)
