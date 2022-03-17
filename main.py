@@ -34,7 +34,8 @@ def roberta_tokenize(seq, model):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, required=True)
-    parser.add_argument("--mask_outside", action="store_true")
+    parser.add_argument("--mask_outside", type=str, required=True)
+    parser.add_argument("--mask_inside", type=str, required=True)
     args = parser.parse_args()
 
     data_path = "030922-joint-OVA-data-Golden-EpGrp-Jac.json"
@@ -67,6 +68,21 @@ if __name__ == "__main__":
     elif args.model == "antiberta_11d":
         model = RobertaModel.from_pretrained("ova/checkpoints/abertaVH_11d/", "checkpoint_best.pt", "vhdata/") 
 
+    # Hack for wandb sweeping
+    if args.mask_outside == "true":
+        mask_outside = True
+    elif args.mask_outside == "false":
+        mask_outside = False
+    else:
+        raise ValueError("mask_outside must be 'true' or 'false'")
+
+    if args.mask_inside == "true":
+        mask_inside = True
+    elif args.mask_inside == "false":
+        mask_inside = False
+    else:
+        raise ValueError("mask_inside must be 'true' or 'false'")
+
     use_hc = True
     results = {}
     for region in ["fr1", "cdr1", "fr2", "cdr2", "fr3", "cdr3", "fr4"]:
@@ -86,7 +102,16 @@ if __name__ == "__main__":
             
             # Compute pseudolikelihood
             start, end = compute_boundaries(aho, region, hc=use_hc)
-            out = compute_pl_logits(seq_tokens.unsqueeze(0), _model, mask_idx, padding_idx, start, end, mask_outside=args.mask_outside)
+            out = compute_pl_logits(
+                seq_tokens.unsqueeze(0),
+                 _model,
+                 mask_idx,
+                 padding_idx,
+                 start,
+                 end,
+                 mask_outside=mask_outside,
+                 mask_inside=mask_inside,
+            )
             if use_esm:
                 out = out["logits"][:, (start+1):(end+1), :]
             else:
@@ -98,9 +123,10 @@ if __name__ == "__main__":
             results[region] = pppl
 
     out_mask = "mask_outside" if args.mask_outside else "no_mask_outside"
+    in_mask = "mask_inside" if args.mask_inside else "no_mask_inside"
     save_dir = Path("pppl-results")
     if not save_dir.exists():
         save_dir.mkdir()
-    save_path = save_dir / Path(f"{args.model}-{out_mask}")
+    save_path = save_dir / Path(f"{args.model}-{out_mask}-{in_mask}")
     with open(save_path, "w") as f:
         json.dump(results, f)

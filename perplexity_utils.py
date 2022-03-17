@@ -4,9 +4,12 @@ import numpy as np
 import torch
 
 
-def compute_pl_logits(seq_tokens, model, mask_idx, padding_idx, start, end, mask_outside=False):
+def compute_pl_logits(seq_tokens, model, mask_idx, padding_idx, start, end, mask_outside, mask_inside):
     # Create seqlen+1 x seqlen+1 matrix (<cls> token is the +1)
     pseudolikelihood_tokens = seq_tokens.repeat(1, seq_tokens.size(1), 1).squeeze()
+
+    if mask_inside:
+        pseudolikelihood_tokens.index_fill_(1, torch.arange(start+1, end+1), padding_idx)
     
     # Diagonal is masked for pseudolikelihood
     pseudolikelihood_tokens.fill_diagonal_(mask_idx)
