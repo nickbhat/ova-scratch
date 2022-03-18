@@ -1,11 +1,13 @@
 import argparse
 import copy
 import json
+from pathlib import Path
 
 import esm
 from fairseq.models.roberta import RobertaModel
 import torch
 from tqdm import tqdm
+import wandb
 
 from perplexity_utils import (
     compute_boundaries,
@@ -19,7 +21,7 @@ def esm_tokenize(seq, alphabet):
     batch_converter = alphabet.get_batch_converter()
     data = [("hc1", seq)]
     _, _, seq_tokens = batch_converter(data)
-    return seq_tokens
+    return seq_tokens.squeeze()
 
 
 def roberta_tokenize(seq, model):
@@ -37,6 +39,8 @@ if __name__ == "__main__":
     parser.add_argument("--mask_outside", type=str, required=True)
     parser.add_argument("--mask_inside", type=str, required=True)
     args = parser.parse_args()
+
+    wandb.init(entity="nickbhat", project="ova-perplexity", config=args)
 
     data_path = "030922-joint-OVA-data-Golden-EpGrp-Jac.json"
 
@@ -102,6 +106,7 @@ if __name__ == "__main__":
             
             # Compute pseudolikelihood
             start, end = compute_boundaries(aho, region, hc=use_hc)
+            # Squeeze then unsqueeze is a lame way to handle cases
             out = compute_pl_logits(
                 seq_tokens.unsqueeze(0),
                  _model,
@@ -122,11 +127,12 @@ if __name__ == "__main__":
             pppl = compute_pseudo_ppl(scores)
             results[region] = pppl
 
+    wandb.log(results)
     out_mask = "mask_outside" if args.mask_outside else "no_mask_outside"
     in_mask = "mask_inside" if args.mask_inside else "no_mask_inside"
     save_dir = Path("pppl-results")
     if not save_dir.exists():
         save_dir.mkdir()
-    save_path = save_dir / Path(f"{args.model}-{out_mask}-{in_mask}")
+    save_path = save_dir / Path(f"{args.model}-{out_mask}-{in_mask}.json")
     with open(save_path, "w") as f:
         json.dump(results, f)
