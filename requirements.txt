@@ -1,0 +1,4 @@
+biopython
+fair-esm
+pandas
+tqdm
