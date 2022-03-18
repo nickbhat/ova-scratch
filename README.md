@@ -7,7 +7,12 @@ This repo mostly contains code for calculating perplexities of masked language m
 The requirements are listed in `requirements.txt`. Setup of fairseq is also required, which means placing `sapiens_aberta.py` in `fairseq/fairseq/models` 
 and having `subs_mat.json` available in the home directory.
 
-Filepaths to saved model weights are hardcoded in lines x-y of `calculate_perplexities.py` and z-w of `calculate_ab_perplexities.py`. 
+Filepaths to saved model weights are hardcoded in lines 39-50 of `calculate_perplexities.py`:
+https://github.com/nickbhat/ova-scratch/blob/fcdd011314e060c5cc41a225258ba90083827049/calculate_perplexities.py#L39-L50 
+
+and 47-58 of `calculate_ab_perplexities.py`:
+https://github.com/nickbhat/ova-scratch/blob/fcdd011314e060c5cc41a225258ba90083827049/calculate_ab_perplexities.py#L47-L58
+
 These may need to be modified for other machines.
 
 W&B is used by default for logging, so run a small job first to debug any login or setup that is needed for your account and machine.
