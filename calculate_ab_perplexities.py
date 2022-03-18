@@ -1,5 +1,4 @@
 import argparse
-import copy
 import json
 from pathlib import Path
 
@@ -15,22 +14,7 @@ from perplexity_utils import (
     compute_scores, 
     compute_pseudo_ppl,
 )
-
-
-def esm_tokenize(seq, alphabet):
-    batch_converter = alphabet.get_batch_converter()
-    data = [("hc1", seq)]
-    _, _, seq_tokens = batch_converter(data)
-    return seq_tokens.squeeze()
-
-
-def roberta_tokenize(seq, model):
-    s = " ".join(list(seq))
-    s_ = f"<s> {s} </s>"
-    seq_tokens = model.task.source_dictionary.encode_line(
-        s_, append_eos=False, add_if_not_exist=False
-    )
-    return seq_tokens
+from token_utils import esm_tokenize, roberta_tokenize
 
 
 if __name__ == "__main__":
@@ -38,9 +22,10 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--mask_outside", type=str, required=True)
     parser.add_argument("--mask_inside", type=str, required=True)
+    parser.add_argument("--data_path", type=str, default="030922-joint-OVA-data-Golden-EpGrp-Jac.json")
     args = parser.parse_args()
 
-    wandb.init(entity="nickbhat", project="ova-perplexity", config=args)
+    wandb.init(project="ova-perplexity", config=args)
 
     data_path = "030922-joint-OVA-data-Golden-EpGrp-Jac.json"
 
@@ -124,8 +109,8 @@ if __name__ == "__main__":
             logits = torch.diagonal(out, dim1=0, dim2=1).transpose(0,1)
             s_ = compute_scores(seq_tokens[(start+1):(end+1)], logits)
             scores.extend(s_)
-            pppl = compute_pseudo_ppl(scores)
-            results[region] = pppl
+        pppl = compute_pseudo_ppl(scores)
+        results[region] = pppl
 
     wandb.log(results)
     out_mask = "mask_outside" if args.mask_outside else "no_mask_outside"
