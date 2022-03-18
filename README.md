@@ -10,8 +10,8 @@ and having `subs_mat.json` available in the home directory.
 Filepaths to saved model weights are hardcoded in lines 39-50 of `calculate_perplexities.py`:
 https://github.com/nickbhat/ova-scratch/blob/fcdd011314e060c5cc41a225258ba90083827049/calculate_perplexities.py#L39-L50 
 
-and 47-58 of `calculate_ab_perplexities.py`:
-https://github.com/nickbhat/ova-scratch/blob/fcdd011314e060c5cc41a225258ba90083827049/calculate_ab_perplexities.py#L47-L58
+and 52-69 of `calculate_ab_perplexities.py`:
+https://github.com/nickbhat/ova-scratch/blob/27573922d89374ea0a2d12216bd441c171fed99e/calculate_ab_perplexities.py#L52-L69
 
 These may need to be modified for other machines.
 
@@ -27,5 +27,7 @@ and AHo numbering (or light chain, respectively). This is the default for all of
 the other one, because it separately calculates perplexity for each region of the antibody sequences. Rather than logging a single perplexity, it logs seven.
 
 ## Sharp edges
+
+Light Chain is not fully implemented because light chain model weights are not provided in `calculate_ab_perplexities.py`. Just follow the pattern for heavy chains to set this up.
 
 ESM-1b perplexity calculations are very slow. To calculate ESM-1b perplexities on 373 antibody sequences (for 7 regions) will likely take more than 1-4 hours.
