@@ -23,16 +23,21 @@ if __name__ == "__main__":
     parser.add_argument("--mask_outside", type=str, required=True)
     parser.add_argument("--mask_inside", type=str, required=True)
     parser.add_argument("--data_path", type=str, default="030922-joint-OVA-data-Golden-EpGrp-Jac.json")
+    parser.add_argument("--chain", type=str, default="heavy", choices=["light", "heavy"])
     args = parser.parse_args()
 
     wandb.init(project="ova-perplexity", config=args)
 
-    data_path = "030922-joint-OVA-data-Golden-EpGrp-Jac.json"
-
+    data_path = args.data_path
     with open(data_path, "r") as f:
         data = json.load(f)
 
-    examples = [(d["HC"], d["HC_AHo"]) for d in data]
+    if args.chain == "heavy":
+        examples = [(d["HC"], d["HC_AHo"]) for d in data]
+        use_hc = True
+    else:
+        examples = [(d["LC"], d["LC_AHo"]) for d in data]
+        use_hc = False
 
     use_esm = False
     if args.model == "esm_1b":
@@ -45,13 +50,19 @@ if __name__ == "__main__":
         model, alphabet = esm.pretrained.esm1_t6_43M_UR50S()
         use_esm = True
     elif args.model == "biophi":
-        model = RobertaModel.from_pretrained("ova/checkpoints/biophiVH/", "checkpoint_best.pt", "vhdata/") 
+        if use_hc:
+            model = RobertaModel.from_pretrained("ova/checkpoints/biophiVH/", "checkpoint_best.pt", "vhdata/") 
+        else:
+            raise NotImplementedError("LC path needs to be provided.")
     elif args.model == "biophi_4d":
         model = RobertaModel.from_pretrained("ova/checkpoints/biophiVH_4d/", "checkpoint_best.pt", "vhdata/") 
     elif args.model == "biophi_11d":
         model = RobertaModel.from_pretrained("ova/checkpoints/biophiVH_11d/", "checkpoint_best.pt", "vhdata/") 
     elif args.model == "antiberta":
-        model = RobertaModel.from_pretrained("ova/checkpoints/abertaVH/", "checkpoint_best.pt", "vhdata/") 
+        if use_hc:
+            model = RobertaModel.from_pretrained("ova/checkpoints/abertaVH/", "checkpoint_best.pt", "vhdata/") 
+        else:
+            raise NotImplementedError("LC path needs to be provided.")
     elif args.model == "antiberta_4d":
         model = RobertaModel.from_pretrained("ova/checkpoints/abertaVH_4d_2/", "checkpoint_best.pt", "vhdata/") 
     elif args.model == "antiberta_11d":
@@ -72,7 +83,6 @@ if __name__ == "__main__":
     else:
         raise ValueError("mask_inside must be 'true' or 'false'")
 
-    use_hc = True
     results = {}
     for region in ["fr1", "cdr1", "fr2", "cdr2", "fr3", "cdr3", "fr4"]:
         scores = []
